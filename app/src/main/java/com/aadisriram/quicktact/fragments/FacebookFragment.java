@@ -8,7 +8,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import com.aadisriram.quicktact.R;
 import com.facebook.Request;
@@ -21,11 +20,12 @@ import com.facebook.widget.LoginButton;
 
 import java.util.Arrays;
 
-public class MainFragment extends Fragment {
+public class FacebookFragment extends Fragment {
 
-    private static final String TAG = "MainFragment";
+    private static final String TAG = "FacebookFragment";
     private UiLifecycleHelper uiHelper;
     public static String userID;
+    public static String userName;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -38,7 +38,7 @@ public class MainFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View view = inflater.inflate(R.layout.fragment_main, container, false);
+        View view = inflater.inflate(R.layout.facebook_fragment, container, false);
         LoginButton authButton = (LoginButton) view.findViewById(R.id.authButton);
         authButton.setFragment(this);
         authButton.setReadPermissions(Arrays.asList("public_profile"));
@@ -99,23 +99,17 @@ public class MainFragment extends Fragment {
 
     public void sendUserId() {
         if(Session.getActiveSession().isOpened()) {
-            Request.executeMeRequestAsync(Session.getActiveSession(), new Request.GraphUserCallback() {
+            Request.newMeRequest(Session.getActiveSession(), new Request.GraphUserCallback() {
 
                 @Override
                 public void onCompleted(GraphUser user, Response response) {
-                    // TODO Auto-generated method stub
                     if (user != null) {
-                        // Display the parsed user info
-                        Log.v(TAG, "Response : " + response);
-//                        userID = user.getId();
                         userID =  user.asMap().get("link").toString();
-                        Log.v(TAG, "UserID : " + user.getId());
-                        Log.v(TAG, "User FirstName : " + user.getFirstName());
-
+                        userName = user.getName();
                     }
                 }
 
-            });
+            }).executeAsync();
         }
     }
 }

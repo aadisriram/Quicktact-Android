@@ -1,5 +1,22 @@
-apply plugin: 'com.android.application'
+buildscript {
+    repositories {
+        mavenCentral()
+        maven { url 'https://maven.fabric.io/public' }
+    }
+    dependencies {
+        classpath 'io.fabric.tools:gradle:1.+'
+        classpath 'com.newrelic.agent.android:agent-gradle-plugin:4.+'
+    }
+}
 
+apply plugin: 'com.android.application'
+apply plugin: 'io.fabric'
+apply plugin: 'newrelic'
+
+repositories {
+    mavenCentral()
+    maven { url 'https://maven.fabric.io/public' }
+}
 
 android {
     compileSdkVersion 21
@@ -23,4 +40,13 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile project(':facebook')
+    compile('com.crashlytics.sdk.android:crashlytics:2.2.0@aar') {
+        transitive = true;
+    }
+    compile('com.twitter.sdk.android:twitter:1.1.1@aar') {
+        transitive = true;
+    }
+    compile 'com.google.code.gson:gson:2.2.4'
+    compile 'com.newrelic.agent.android:android-agent:4.+'
+    compile 'com.google.android.gms:play-services:6.5.+'
 }

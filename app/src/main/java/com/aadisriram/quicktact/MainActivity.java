@@ -1,5 +1,6 @@
 package com.aadisriram.quicktact;
 
+import android.support.v4.app.Fragment;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -10,41 +11,35 @@ import android.nfc.NfcEvent;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v4.app.FragmentActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
-import com.aadisriram.quicktact.fragments.MainFragment;
-import com.facebook.Session;
-import com.facebook.SessionState;
-import com.facebook.UiLifecycleHelper;
+import com.aadisriram.quicktact.DataClasses.SocialDataManager;
+import com.aadisriram.quicktact.fragments.FacebookFragment;
+import com.aadisriram.quicktact.fragments.GooglePlusFragment;
+import com.aadisriram.quicktact.fragments.TwitterFragment;
+
+import com.google.gson.Gson;
 
 import static android.nfc.NdefRecord.createMime;
 
+import com.newrelic.agent.android.NewRelic;
 
 public class MainActivity extends FragmentActivity implements NfcAdapter.CreateNdefMessageCallback {
 
-    private UiLifecycleHelper uiHelper;
-    private MainFragment mainFragment;
     NfcAdapter mNfcAdapter;
     protected boolean intentProcessed = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        NewRelic.withApplicationToken(
+                "AA566a84bda48f5c8011c5b0b664b9bc73027bef4a"
+        ).start(this.getApplication());
 
-        if (savedInstanceState == null) {
-            // Add the fragment on initial activity setup
-            mainFragment = new MainFragment();
-            getSupportFragmentManager()
-                    .beginTransaction()
-                    .add(android.R.id.content, mainFragment)
-                    .commit();
-        } else {
-            // Or set the fragment from restored state info
-            mainFragment = (MainFragment) this.getSupportFragmentManager()
-                    .findFragmentById(android.R.id.content);
-        }
+        setContentView(R.layout.activity_main);
 
         mNfcAdapter = NfcAdapter.getDefaultAdapter(this);
         if (mNfcAdapter == null) {
@@ -56,17 +51,23 @@ public class MainActivity extends FragmentActivity implements NfcAdapter.CreateN
         mNfcAdapter.setNdefPushMessageCallback(this, this);
     }
 
-    public static Intent getOpenFacebookIntent(Context context, String userId) {
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
 
-//        try {
-//            context.getPackageManager()
-//                    .getPackageInfo("com.facebook.katana", 0); //Checks if FB is even installed.
-//            return new Intent(Intent.ACTION_VIEW,
-//                    Uri.parse("fb://profile/"+userId)); //Trys to make intent with FB's URI
-//        } catch (Exception e) {
-            return new Intent(Intent.ACTION_VIEW,
-                    Uri.parse(userId)); //catches and opens a url to the desired page
-//        }
+        if(requestCode == GooglePlusFragment.RC_SIGN_IN) {
+            Fragment fragment = getSupportFragmentManager()
+                    .findFragmentById(R.id.google_plus_fragment);
+            if (fragment != null) {
+                fragment.onActivityResult(requestCode, resultCode, data);
+            }
+        } else {
+            Fragment fragment = getSupportFragmentManager()
+                    .findFragmentById(R.id.twitter_fragment);
+            if (fragment != null) {
+                fragment.onActivityResult(requestCode, resultCode, data);
+            }
+        }
     }
 
     @Override
@@ -75,21 +76,6 @@ public class MainActivity extends FragmentActivity implements NfcAdapter.CreateN
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
-
-    private void onSessionStateChange(Session session, SessionState state, Exception exception) {
-        if (state.isOpened()) {
-            Toast.makeText(getApplicationContext(), "Logged in", Toast.LENGTH_LONG).show();
-        } else if (state.isClosed()) {
-            Toast.makeText(getApplicationContext(), "Logged out", Toast.LENGTH_LONG).show();
-        }
-    }
-
-    private Session.StatusCallback callback = new Session.StatusCallback() {
-        @Override
-        public void call(Session session, SessionState state, Exception exception) {
-            onSessionStateChange(session, state, exception);
-        }
-    };
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -108,13 +94,15 @@ public class MainActivity extends FragmentActivity implements NfcAdapter.CreateN
 
     @Override
     public NdefMessage createNdefMessage(NfcEvent event) {
+        SocialDataManager dataManager = new SocialDataManager(0, FacebookFragment.userID,
+                TwitterFragment.getTwitterUserId(),
+                FacebookFragment.userName,
+                GooglePlusFragment.userId,
+                GooglePlusFragment.userName);
 
-        String message = "Please ask your friend login into facebook";
+        Gson gson = new Gson();
 
-        if(MainFragment.userID != null)
-            message = MainFragment.userID;
-
-        String text = (message);
+        String text = gson.toJson(dataManager);
         NdefMessage msg = new NdefMessage(
                 new NdefRecord[] { createMime(
                         "application/vnd.com.aadisriram.quicktact", text.getBytes())
@@ -126,8 +114,9 @@ public class MainActivity extends FragmentActivity implements NfcAdapter.CreateN
                          * activity starts when receiving a beamed message. For now, this code
                          * uses the tag dispatch system.
                          */
-                        //,NdefRecord.createApplicationRecord("com.example.android.beam")
+                        //,NdefRecord.createApplicationRecord("com.aadisriram.quicktact")
                 });
+        Log.d("NFCMessage", gson.toJson(msg));
         return msg;
     }
 
@@ -151,20 +140,13 @@ public class MainActivity extends FragmentActivity implements NfcAdapter.CreateN
         setIntent(intent);
     }
 
-    /**
-     * Parses the NDEF Message from the intent and prints to the TextView
-     */
     void processIntent(Intent intent) {
         Parcelable[] rawMsgs = intent.getParcelableArrayExtra(
                 NfcAdapter.EXTRA_NDEF_MESSAGES);
-        // only one message sent during the beam
         NdefMessage msg = (NdefMessage) rawMsgs[0];
-        // record 0 contains the MIME type, record 1 is the AAR, if present
         String userId = new String(msg.getRecords()[0].getPayload());
-        Toast.makeText(getApplication(), userId, Toast.LENGTH_LONG).show();
-        Intent facebookIntent = getOpenFacebookIntent(getApplicationContext(), userId);
-        facebookIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        startActivity(facebookIntent);
+        Intent nfcRecIntent = new Intent(this, NFCDataReceivedActivity.class);
+        nfcRecIntent.putExtra("data_string", userId);
+        startActivity(nfcRecIntent);
     }
-
 }

@@ -4,30 +4,51 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.NFC" />
-    <uses-feature android:name="android.hardware.nfc" android:required="true" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+    <uses-permission android:name="android.permission.USE_CREDENTIALS" />
+
+    <uses-feature
+        android:name="android.hardware.nfc"
+        android:required="true" />
 
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
-        <meta-data android:name="com.facebook.sdk.ApplicationId"
+        <meta-data
+            android:name="com.facebook.sdk.ApplicationId"
             android:value="@string/facebook_app_id" />
+        <meta-data
+            android:name="com.crashlytics.ApiKey"
+            android:value="076b7171357c9686008374710c50d8bb76edd429" />
+
+        <meta-data android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
+
         <activity
-            android:name="com.aadisriram.quicktact.MainActivity"
+            android:name=".MainActivity"
             android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
-                <action android:name="android.nfc.action.NDEF_DISCOVERED"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <data android:mimeType="application/vnd.com.aadisriram.quicktact"/>
+
+                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="application/vnd.com.aadisriram.quicktact" />
             </intent-filter>
         </activity>
         <activity
             android:name="com.facebook.LoginActivity"
-            android:label="Facebook">
+            android:label="Facebook" >
+        </activity>
+        <activity
+            android:name=".NFCDataReceivedActivity"
+            android:label="@string/title_activity_nfcdata_received" >
         </activity>
     </application>
 
