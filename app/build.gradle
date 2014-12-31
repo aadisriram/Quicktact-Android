@@ -24,10 +24,10 @@ android {
 
     defaultConfig {
         applicationId "com.aadisriram.quicktact"
-        minSdkVersion 19
+        minSdkVersion 14
         targetSdkVersion 21
-        versionCode 1
-        versionName "1.0"
+        versionCode 6
+        versionName "1.6"
     }
     buildTypes {
         release {

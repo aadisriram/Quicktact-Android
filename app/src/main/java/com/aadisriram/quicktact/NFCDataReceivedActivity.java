@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.nfc.NfcAdapter;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -31,40 +32,59 @@ public class NFCDataReceivedActivity extends Activity {
         String dataString = intent.getStringExtra("data_string");
         final SocialDataManager sdm = gson.fromJson(dataString, SocialDataManager.class);
 
-        TextView twitterUsername = (TextView) findViewById(R.id.twitter_username);
-        twitterUsername.setText(sdm.getTwitterId());
+        final LinearLayout twitterLayout = (LinearLayout) findViewById(R.id.twitter_load_profile);
+        final LinearLayout facebookLayout = (LinearLayout) findViewById(R.id.facebook_load_profile);
+        final LinearLayout googlePlusLayout = (LinearLayout) findViewById(R.id.google_plus_load_profile);
+
+        final TextView twitterUsername = (TextView) findViewById(R.id.twitter_username);
+        String twitterUserString = sdm.getTwitterId();
+        if(twitterUserString.length() < 1) {
+            twitterLayout.setVisibility(View.GONE);
+        } else {
+            twitterUsername.setText(sdm.getTwitterId());
+            twitterLayout.setVisibility(View.VISIBLE);
+            twitterLayout.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    openTwitter(sdm.getTwitterId());
+                }
+            });
+        }
 
         TextView facebookUsername = (TextView) findViewById(R.id.facebook_name);
-        facebookUsername.setText(sdm.getFacebookName());
+        String facebookNameString = sdm.getFacebookName();
+        if(facebookNameString.length() < 1) {
+            facebookLayout.setVisibility(View.GONE);
+        } else {
+            facebookUsername.setText(sdm.getFacebookName());
+            facebookLayout.setVisibility(View.VISIBLE);
+            facebookLayout.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent facebookIntent = getOpenFacebookIntent(getApplicationContext(), sdm.getFacebookId());
+                    facebookIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                    startActivity(facebookIntent);
+                }
+            });
+        }
 
         TextView googlePlusUsername = (TextView) findViewById(R.id.google_plus_username);
-        googlePlusUsername.setText(sdm.getGooglePlusUsername());
+        String googlePlusNameString = sdm.getGooglePlusUsername();
+        if(googlePlusNameString.length() < 1) {
+            googlePlusLayout.setVisibility(View.GONE);
+        } else {
+            googlePlusUsername.setText(sdm.getGooglePlusUsername());
+            googlePlusLayout.setVisibility(View.VISIBLE);
+            googlePlusLayout.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    openGooglePlus(sdm.getGooglePlusId());
+                }
+            });
+        }
 
-        LinearLayout facebookLayout = (LinearLayout) findViewById(R.id.facebook_load_profile);
-        facebookLayout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent facebookIntent = getOpenFacebookIntent(getApplicationContext(), sdm.getFacebookId());
-                facebookIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                startActivity(facebookIntent);
-            }
-        });
-
-        LinearLayout twitterLayout = (LinearLayout) findViewById(R.id.twitter_load_profile);
-        twitterLayout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                openTwitter(sdm.getTwitterId());
-            }
-        });
-
-        LinearLayout googlePlusLayout = (LinearLayout) findViewById(R.id.google_plus_load_profile);
-        googlePlusLayout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                openGooglePlus(sdm.getGooglePlusId());
-            }
-        });
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(this);
+        adapter.setNdefPushMessage(null, this, this);
     }
 
 

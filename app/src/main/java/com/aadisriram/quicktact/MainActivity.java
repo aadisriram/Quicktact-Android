@@ -1,9 +1,11 @@
 package com.aadisriram.quicktact;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.os.Build;
+import android.provider.Settings;
 import android.support.v4.app.Fragment;
-import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
@@ -31,6 +33,8 @@ public class MainActivity extends FragmentActivity implements NfcAdapter.CreateN
 
     NfcAdapter mNfcAdapter;
     protected boolean intentProcessed = false;
+    AlertDialog.Builder nfcAlertBox;
+    AlertDialog nfcAlertDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,12 +44,16 @@ public class MainActivity extends FragmentActivity implements NfcAdapter.CreateN
         ).start(this.getApplication());
 
         setContentView(R.layout.activity_main);
-
+        nfcAlertBox = new AlertDialog.Builder(MainActivity.this);
+        setupAlert();
+        nfcAlertDialog = nfcAlertBox.create();
         mNfcAdapter = NfcAdapter.getDefaultAdapter(this);
         if (mNfcAdapter == null) {
             Toast.makeText(this, "NFC is not available", Toast.LENGTH_LONG).show();
             finish();
             return;
+        } else {
+            showNFCAlert();
         }
         // Register callback
         mNfcAdapter.setNdefPushMessageCallback(this, this);
@@ -55,36 +63,37 @@ public class MainActivity extends FragmentActivity implements NfcAdapter.CreateN
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if(requestCode == GooglePlusFragment.RC_SIGN_IN) {
-            Fragment fragment = getSupportFragmentManager()
-                    .findFragmentById(R.id.google_plus_fragment);
-            if (fragment != null) {
-                fragment.onActivityResult(requestCode, resultCode, data);
+        try {
+            if (requestCode == GooglePlusFragment.RC_SIGN_IN) {
+                Fragment fragment = getSupportFragmentManager()
+                        .findFragmentById(R.id.google_plus_fragment);
+                if (fragment != null) {
+                    fragment.onActivityResult(requestCode, resultCode, data);
+                }
+            } else {
+                Fragment fragment = getSupportFragmentManager()
+                        .findFragmentById(R.id.twitter_fragment);
+                if (fragment != null) {
+                    fragment.onActivityResult(requestCode, resultCode, data);
+                    TwitterFragment.getTwitterUserId();
+                }
             }
-        } else {
-            Fragment fragment = getSupportFragmentManager()
-                    .findFragmentById(R.id.twitter_fragment);
-            if (fragment != null) {
-                fragment.onActivityResult(requestCode, resultCode, data);
-            }
+        } catch(Exception ex) {
+            //TODO: This is a stupid hack, fix it
+            Log.d("AuthCallback", "Failed due to bad auth");
         }
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
+        // Handle action ba
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
         }
@@ -94,8 +103,10 @@ public class MainActivity extends FragmentActivity implements NfcAdapter.CreateN
 
     @Override
     public NdefMessage createNdefMessage(NfcEvent event) {
-        SocialDataManager dataManager = new SocialDataManager(0, FacebookFragment.userID,
-                TwitterFragment.getTwitterUserId(),
+        SocialDataManager dataManager = new SocialDataManager(
+                0,
+                FacebookFragment.userID,
+                TwitterFragment.twitterUserId,
                 FacebookFragment.userName,
                 GooglePlusFragment.userId,
                 GooglePlusFragment.userName);
@@ -105,16 +116,8 @@ public class MainActivity extends FragmentActivity implements NfcAdapter.CreateN
         String text = gson.toJson(dataManager);
         NdefMessage msg = new NdefMessage(
                 new NdefRecord[] { createMime(
-                        "application/vnd.com.aadisriram.quicktact", text.getBytes())
-                        /**
-                         * The Android Application Record (AAR) is commented out. When a device
-                         * receives a push with an AAR in it, the application specified in the AAR
-                         * is guaranteed to run. The AAR overrides the tag dispatch system.
-                         * You can add it back in to guarantee that this
-                         * activity starts when receiving a beamed message. For now, this code
-                         * uses the tag dispatch system.
-                         */
-                        //,NdefRecord.createApplicationRecord("com.aadisriram.quicktact")
+                        "application/com.aadisriram.quicktact", text.getBytes())
+                        ,NdefRecord.createApplicationRecord("com.aadisriram.quicktact")
                 });
         Log.d("NFCMessage", gson.toJson(msg));
         return msg;
@@ -123,6 +126,9 @@ public class MainActivity extends FragmentActivity implements NfcAdapter.CreateN
     @Override
     public void onResume() {
         super.onResume();
+
+        if(!mNfcAdapter.isEnabled())
+            showNFCAlert();
         // Check to see that the Activity started due to an Android Beam
         if(!intentProcessed) {
             if (NfcAdapter.ACTION_NDEF_DISCOVERED.equals(getIntent().getAction())) {
@@ -148,5 +154,39 @@ public class MainActivity extends FragmentActivity implements NfcAdapter.CreateN
         Intent nfcRecIntent = new Intent(this, NFCDataReceivedActivity.class);
         nfcRecIntent.putExtra("data_string", userId);
         startActivity(nfcRecIntent);
+    }
+
+    private void showNFCAlert() {
+        if (!mNfcAdapter.isEnabled()) {
+            if(!nfcAlertDialog.isShowing()) {
+                nfcAlertDialog.setCancelable(false);
+                nfcAlertDialog.setCanceledOnTouchOutside(false);
+                nfcAlertDialog.show();
+            }
+        }
+    }
+
+    private void setupAlert() {
+        nfcAlertBox.setTitle("Quicktact");
+        nfcAlertBox.setMessage("Please switch on NFC");
+        nfcAlertBox.setPositiveButton("Turn On", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                    Intent intent = new Intent(Settings.ACTION_NFC_SETTINGS);
+                    startActivity(intent);
+                } else {
+                    Intent intent = new Intent(Settings.ACTION_WIRELESS_SETTINGS);
+                    startActivity(intent);
+                }
+            }
+        });
+        nfcAlertBox.setNegativeButton("Close", new DialogInterface.OnClickListener() {
+
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                finish();
+            }
+        });
     }
 }

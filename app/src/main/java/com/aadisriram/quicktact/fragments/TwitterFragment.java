@@ -27,7 +27,7 @@ public class TwitterFragment extends Fragment {
     private static final String TWITTER_KEY = "SUvNN3urBPvCFDIZiBwwL4k88";
     private static final String TWITTER_SECRET = "2XlgaD2FakUEo9T1l9NLw4kIgUgHQI3Dqw7MKCBPkMser7OuaP";
 
-    private static String twitterUserId;
+    public static String twitterUserId = "";
 
     private TwitterLoginButton loginButton;
     private LinearLayout logoutButtonLayout;
@@ -56,6 +56,7 @@ public class TwitterFragment extends Fragment {
                 if(currentSession != null) {
                     Log.d("Twitter", "Logged out of twitter");
                     Twitter.logOut();
+                    twitterUserId = "";
                     loginButton.setVisibility(View.VISIBLE);
                     logoutButtonLayout.setVisibility(View.GONE);
                 }
@@ -85,14 +86,15 @@ public class TwitterFragment extends Fragment {
         loginButton.onActivityResult(requestCode, resultCode, data);
     }
 
-    public static String getTwitterUserId() {
-        return Twitter.getSessionManager().getActiveSession().getUserName();
+    public static void getTwitterUserId() {
+        twitterUserId = Twitter.getSessionManager().getActiveSession().getUserName();
     }
 
     @Override
     public void onResume() {
         super.onResume();
         if(Twitter.getSessionManager().getActiveSession() != null) {
+            getTwitterUserId();
             loginButton.setVisibility(View.GONE);
             logoutButtonLayout.setVisibility(View.VISIBLE);
         }

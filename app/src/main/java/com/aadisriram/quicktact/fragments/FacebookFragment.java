@@ -24,8 +24,8 @@ public class FacebookFragment extends Fragment {
 
     private static final String TAG = "FacebookFragment";
     private UiLifecycleHelper uiHelper;
-    public static String userID;
-    public static String userName;
+    public static String userID = "";
+    public static String userName = "";
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -93,6 +93,8 @@ public class FacebookFragment extends Fragment {
             Log.i(TAG, "Logged in...");
             sendUserId();
         } else if (state.isClosed()) {
+            userID = "";
+            userName = "";
             Log.i(TAG, "Logged out...");
         }
     }

@@ -14,7 +14,7 @@
 
     <application
         android:allowBackup="true"
-        android:icon="@drawable/ic_launcher"
+        android:icon="@drawable/icon"
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
         <meta-data
@@ -32,14 +32,12 @@
             android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
-
+            </intent-filter>
+            <intent-filter>
                 <action android:name="android.nfc.action.NDEF_DISCOVERED" />
-
                 <category android:name="android.intent.category.DEFAULT" />
-
-                <data android:mimeType="application/vnd.com.aadisriram.quicktact" />
+                <data android:mimeType="application/com.aadisriram.quicktact" />
             </intent-filter>
         </activity>
         <activity
@@ -48,7 +46,7 @@
         </activity>
         <activity
             android:name=".NFCDataReceivedActivity"
-            android:label="@string/title_activity_nfcdata_received" >
+            android:label="Quicktact" >
         </activity>
     </application>
 

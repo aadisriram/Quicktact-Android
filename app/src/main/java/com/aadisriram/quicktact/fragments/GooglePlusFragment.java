@@ -33,8 +33,8 @@ public class GooglePlusFragment extends Fragment implements
     public static final int RC_SIGN_IN = 1022;
     private GoogleApiClient mGoogleApiClient;
     private boolean mIntentInProgress;
-    public static String userId;
-    public static String userName;
+    public static String userId = "";
+    public static String userName = "";
 
     private SignInButton signInButton;
     private LinearLayout logoutLayout;
@@ -62,6 +62,8 @@ public class GooglePlusFragment extends Fragment implements
                 Plus.AccountApi.clearDefaultAccount(mGoogleApiClient);
                 mGoogleApiClient.disconnect();
                 mGoogleApiClient.connect();
+                userId = "";
+                userName = "";
                 logoutLayout.setVisibility(View.GONE);
                 signInButton.setVisibility(View.VISIBLE);
             }
